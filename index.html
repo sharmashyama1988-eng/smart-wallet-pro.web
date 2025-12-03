@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Wallet Pro (Firebase)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(136, 58, 225, 0.3); border-radius: 10px; }
+        
+        /* Loading Spinner */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-left-color: #883AE1;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-[#0F0518] text-white flex items-center justify-center min-h-screen p-4 select-none" 
+      style="background: linear-gradient(135deg, #0F0518 0%, #1A0B2E 100%);">
+
+    <!-- App Container -->
+    <div class="w-full max-w-md bg-[#130722] rounded-[2.5rem] shadow-2xl overflow-hidden border border-[#883AE1]/20 relative">
+
+        <!-- HEADER SECTION -->
+        <div class="p-8 pb-10 relative overflow-hidden" style="background: linear-gradient(to bottom right, #240b3b, #320342);">
+            
+            <!-- Glow Effects -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-[#883AE1]/10 rounded-full blur-[80px] pointer-events-none"></div>
+            <div class="absolute bottom-0 left-0 w-40 h-40 bg-[#FF2E93]/10 rounded-full blur-[60px] pointer-events-none"></div>
+
+            <!-- Top Bar -->
+            <div class="flex justify-between items-start mb-6 relative z-10">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/5 rounded-xl border border-white/10 backdrop-blur-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF8FB4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+                    </div>
+                    <div>
+                        <span class="font-bold text-lg tracking-wide block leading-none">Smart Wallet</span>
+                        <div class="flex items-center gap-1 mt-1">
+                            <div id="statusDot" class="w-2 h-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                            <span id="statusText" class="text-[10px] text-white/40 font-medium">Connecting...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="backupBtn" class="flex items-center gap-2 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] px-3 py-1.5 rounded-full text-xs font-bold transition-all border border-[#25D366]/30 group">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h2"/><path d="M8 17h2"/><path d="M14 13h2"/><path d="M14 17h2"/></svg>
+                    <span>Export</span>
+                </button>
+            </div>
+
+            <!-- Total Balance -->
+            <div class="text-center relative z-10 mb-6">
+                <p class="text-[#FF8FB4] text-xs font-bold tracking-[0.2em] uppercase opacity-70 mb-2">Total Balance</p>
+                <h1 id="totalBalance" class="text-5xl font-black tracking-tight text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">₹0</h1>
+            </div>
+
+            <!-- Budget Bar -->
+            <div class="relative z-10 bg-[#0d0417]/50 p-4 rounded-2xl border border-white/5 backdrop-blur-sm">
+                <div class="flex justify-between text-xs font-medium mb-2 text-gray-400">
+                    <span id="spendPercentText">Spent: 0%</span>
+                    <span id="incomeExpenseText">₹0 / ₹0</span>
+                </div>
+                <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div id="budgetBar" class="h-full rounded-full transition-all duration-1000 ease-out bg-green-400 shadow-[0_0_10px_currentColor]" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="px-6 -mt-6 flex gap-3 relative z-20">
+            <div class="flex-1 rounded-2xl p-4 bg-[#1E092D] border border-[#883AE1]/30 shadow-lg backdrop-blur-md">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="p-1.5 rounded-lg bg-[#883AE1]/20">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#883AE1" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase text-gray-400">Income</span>
+                </div>
+                <p id="totalIncome" class="text-lg font-bold text-white">₹0</p>
+            </div>
+            <div class="flex-1 rounded-2xl p-4 bg-[#2D091F] border border-[#FF2E93]/30 shadow-lg backdrop-blur-md">
+                <div class="flex items-center gap-2 mb-2">
+                    <div class="p-1.5 rounded-lg bg-[#FF2E93]/20">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF2E93" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>
+                    </div>
+                    <span class="text-[10px] font-bold uppercase text-gray-400">Expense</span>
+                </div>
+                <p id="totalExpense" class="text-lg font-bold text-white">₹0</p>
+            </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="p-6">
+            <!-- Input Form -->
+            <form id="transactionForm" class="mb-8 mt-2 space-y-4">
+                <div class="relative">
+                    <input type="text" id="descInput" placeholder="Transaction Name (e.g. Chai, Salary)" 
+                           class="w-full p-4 bg-[#1E092D] border border-[#883AE1]/20 rounded-2xl focus:outline-none focus:border-[#883AE1] focus:ring-1 focus:ring-[#883AE1] transition-all text-sm font-medium placeholder-white/30 text-white">
+                    
+                    <div id="smartBadge" class="hidden absolute right-3 top-3.5 text-[10px] font-bold bg-[#FF2E93] px-2 py-1 rounded text-white animate-pulse items-center gap-1 shadow-[0_0_10px_#FF2E93]">
+                        ⚡ SMART DETECT
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                   <div class="relative flex-1">
+                      <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"><span class="text-[#FF8FB4] font-bold text-lg">₹</span></div>
+                      <input type="number" id="amountInput" placeholder="0" 
+                             class="w-full p-4 pl-10 bg-[#1E092D] border border-[#883AE1]/20 rounded-2xl focus:outline-none focus:border-[#883AE1] focus:ring-1 focus:ring-[#883AE1] transition-all font-bold text-lg placeholder-white/30 text-white">
+                   </div>
+                   <button type="submit" id="addBtn" class="px-6 rounded-2xl font-bold text-white shadow-lg transition-all active:scale-95 flex items-center justify-center bg-gradient-to-tr from-[#FF2E93] to-[#d61c75] shadow-[#FF2E93]/40 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                   </button>
+                </div>
+                
+                <div class="flex justify-center gap-4 text-xs font-medium text-white/40">
+                   <button type="button" id="typeIncome" class="hover:text-white transition-colors">Income</button>
+                   <span>|</span>
+                   <button type="button" id="typeExpense" class="text-[#FF2E93] font-bold hover:text-white transition-colors">Expense</button>
+                </div>
+            </form>
+
+            <!-- History List -->
+            <div class="flex items-center justify-between mb-4 px-1">
+                <h3 class="text-white/60 font-bold text-xs uppercase tracking-wider">Transaction History</h3>
+                <span id="itemCount" class="text-[10px] bg-white/10 px-2 py-1 rounded text-white/50">Loading...</span>
+            </div>
+            
+            <ul id="historyList" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar pr-1 pb-10">
+                <!-- Javascript will load items here -->
+                <div class="flex justify-center py-8">
+                    <div class="loader"></div>
+                </div>
+            </ul>
+        </div>
+    </div>
+
+    <!-- FIREBASE & APP LOGIC -->
+    <script type="module">
+        // Import Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+        // --- CONFIGURATION ---
+        const getUserConfig = () => ({
+            apiKey: "AIzaSyAkvesE4QkFKR_RhhlR4ZGwx_jvkxhA6hI",
+            authDomain: "shaped-radius-454508-s8.firebaseapp.com",
+            databaseURL: "https://shaped-radius-454508-s8-default-rtdb.firebaseio.com",
+            projectId: "shaped-radius-454508-s8",
+            storageBucket: "shaped-radius-454508-s8.firebasestorage.app",
+            messagingSenderId: "595483236499",
+            appId: "1:595483236499:web:12acc8978923756e4cd566"
+        });
+
+        let firebaseConfig;
+        try {
+            if (typeof __firebase_config !== 'undefined') {
+                firebaseConfig = JSON.parse(__firebase_config);
+            } else {
+                firebaseConfig = getUserConfig();
+            }
+        } catch (e) {
+            console.warn("Using fallback config", e);
+            firebaseConfig = getUserConfig();
+        }
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'smart-wallet-demo';
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- STATE & DOM ---
+        let transactions = [];
+        let currentType = 'expense';
+        let currentUser = null;
+        let isProcessing = false;
+
+        const descInput = document.getElementById('descInput');
+        const amountInput = document.getElementById('amountInput');
+        const list = document.getElementById('historyList');
+        const addBtn = document.getElementById('addBtn');
+        const smartBadge = document.getElementById('smartBadge');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        // --- AUTH & LISTENER ---
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (err) {
+                console.error("Auth failed:", err);
+                statusText.innerText = "Offline Mode";
+                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+            }
+        }
+
+        initAuth();
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                statusText.innerText = "System Active";
+                statusDot.className = "w-2 h-2 rounded-full bg-green-500 animate-pulse";
+                setupRealtimeListener(user);
+            } else {
+                statusText.innerText = "Disconnected";
+                statusDot.className = "w-2 h-2 rounded-full bg-red-500";
+            }
+        });
+
+        function setupRealtimeListener(user) {
+            // Using a public collection under the artifact/appId/public path as per Rule 1
+            const q = collection(db, 'artifacts', appId, 'public', 'data', 'smartwallet_transactions');
+
+            onSnapshot(q, (snapshot) => {
+                transactions = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                
+                // Sort in memory (Rule 2: avoid orderBy in query)
+                transactions.sort((a, b) => {
+                    const tA = a.createdAt?.toMillis() || 0;
+                    const tB = b.createdAt?.toMillis() || 0;
+                    return tB - tA; // Newest first
+                });
+
+                render();
+            }, (error) => {
+                console.error("Sync Error:", error);
+            });
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        // Helper: Format Money
+        function formatMoney(num) {
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(num);
+        }
+
+        // Helper: Toggle Type
+        window.setType = (type) => {
+            currentType = type;
+            const btnIncome = document.getElementById('typeIncome');
+            const btnExpense = document.getElementById('typeExpense');
+            
+            if (type === 'income') {
+                btnIncome.className = 'text-[#883AE1] font-bold transition-colors';
+                btnExpense.className = 'hover:text-white transition-colors';
+                addBtn.className = "px-6 rounded-2xl font-bold text-white shadow-lg transition-all active:scale-95 flex items-center justify-center bg-gradient-to-tr from-[#883AE1] to-[#6d2ab5] shadow-[#883AE1]/40";
+            } else {
+                btnExpense.className = 'text-[#FF2E93] font-bold transition-colors';
+                btnIncome.className = 'hover:text-white transition-colors';
+                addBtn.className = "px-6 rounded-2xl font-bold text-white shadow-lg transition-all active:scale-95 flex items-center justify-center bg-gradient-to-tr from-[#FF2E93] to-[#d61c75] shadow-[#FF2E93]/40";
+            }
+        }
+        // Attach listeners manually for type buttons since we are in module
+        document.getElementById('typeIncome').onclick = () => window.setType('income');
+        document.getElementById('typeExpense').onclick = () => window.setType('expense');
+
+
+        // --- LOGIC: ADD ---
+        document.getElementById('transactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!descInput.value.trim() || !amountInput.value || !currentUser) return;
+
+            addBtn.disabled = true;
+            addBtn.innerHTML = `<div class="loader" style="width:18px; height:18px;"></div>`;
+
+            const val = parseFloat(amountInput.value);
+            const finalVal = currentType === 'expense' ? -Math.abs(val) : Math.abs(val);
+
+            try {
+                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'smartwallet_transactions');
+                await addDoc(collectionRef, {
+                    text: descInput.value,
+                    amount: finalVal,
+                    // We save raw date strings for UI consistency, plus server timestamp for sorting
+                    date: new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short'}),
+                    time: new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit'}),
+                    createdAt: serverTimestamp(),
+                    userId: currentUser.uid
+                });
+
+                descInput.value = '';
+                amountInput.value = '';
+            } catch (err) {
+                console.error("Add failed", err);
+                alert("Failed to save transaction.");
+            } finally {
+                addBtn.disabled = false;
+                addBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`;
+            }
+        });
+
+        // --- LOGIC: DELETE ---
+        // Expose to window for inline onclick
+        window.deleteTxn = async (id) => {
+            if(!currentUser) return;
+            if(confirm("Delete this entry permanently?")) {
+                try {
+                    await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'smartwallet_transactions', id));
+                } catch (err) {
+                    console.error("Delete failed", err);
+                    alert("Could not delete item.");
+                }
+            }
+        };
+
+        // --- SMART DETECT ---
+        descInput.addEventListener('input', (e) => {
+            const txt = e.target.value.toLowerCase();
+            const incKeys = ['salary', 'vetan', 'bonus', 'sold', 'credit', 'income'];
+            const expKeys = ['chai', 'food', 'rent', 'bill', 'petrol', 'shop', 'buy', 'paid', 'uber'];
+
+            if (incKeys.some(k => txt.includes(k))) {
+                if (currentType !== 'income') { window.setType('income'); triggerSmart(); }
+            } else if (expKeys.some(k => txt.includes(k))) {
+                if (currentType !== 'expense') { window.setType('expense'); triggerSmart(); }
+            }
+        });
+
+        function triggerSmart() {
+            smartBadge.classList.remove('hidden');
+            smartBadge.classList.add('flex');
+            setTimeout(() => {
+                smartBadge.classList.add('hidden');
+                smartBadge.classList.remove('flex');
+            }, 2000);
+        }
+
+        // --- BACKUP ---
+        document.getElementById('backupBtn').onclick = () => {
+            if (transactions.length === 0) { alert("Nothing to export!"); return; }
+            
+            let csv = "Date,Time,Description,Type,Amount\n";
+            transactions.forEach(t => {
+                const type = t.amount > 0 ? "Income" : "Expense";
+                csv += `${t.date},${t.time},"${t.text}",${type},${t.amount}\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `SmartWallet_Backup_${new Date().toLocaleDateString().replace(/\//g,'-')}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // --- RENDER ---
+        function render() {
+            list.innerHTML = '';
+            
+            const income = transactions.filter(t => t.amount > 0).reduce((a,c) => a+c.amount, 0);
+            const expense = Math.abs(transactions.filter(t => t.amount < 0).reduce((a,c) => a+c.amount, 0));
+            const total = income - expense;
+
+            // Stats
+            document.getElementById('totalBalance').innerText = formatMoney(total);
+            document.getElementById('totalIncome').innerText = formatMoney(income);
+            document.getElementById('totalExpense').innerText = formatMoney(expense);
+            document.getElementById('itemCount').innerText = `${transactions.length} items`;
+            
+            // Bar
+            const pct = income > 0 ? ((expense / income) * 100) : 0;
+            const bar = document.getElementById('budgetBar');
+            bar.style.width = `${Math.min(pct, 100)}%`;
+            bar.className = `h-full rounded-full transition-all duration-1000 ease-out shadow-[0_0_10px_currentColor] ${pct > 90 ? 'bg-red-500' : pct > 50 ? 'bg-yellow-400' : 'bg-green-400'}`;
+            document.getElementById('spendPercentText').innerText = `Spent: ${pct.toFixed(0)}%`;
+            document.getElementById('incomeExpenseText').innerText = `${formatMoney(expense)} / ${formatMoney(income)}`;
+
+            // List
+            if (transactions.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-10 opacity-30 flex flex-col items-center">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mb-2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        <p class="text-sm">No transactions yet</p>
+                    </div>`;
+                return;
+            }
+
+            transactions.forEach(t => {
+                const isExp = t.amount < 0;
+                const color = isExp ? 'text-[#FF2E93]' : 'text-[#883AE1]';
+                const icon = isExp 
+                    ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>'
+                    : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>';
+
+                const li = document.createElement('li');
+                li.className = "group flex justify-between items-center p-4 bg-[#1E092D]/50 border border-white/5 rounded-2xl hover:bg-[#1E092D] hover:border-[#883AE1]/30 transition-all";
+                li.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center bg-black/20 ${color}">
+                            ${icon}
+                        </div>
+                        <div>
+                            <p class="font-bold text-white text-sm">${t.text}</p>
+                            <p class="text-[10px] text-white/40 font-medium">${t.date} • ${t.time}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <p class="font-bold ${color}">${t.amount > 0 ? '+' : ''}${formatMoney(t.amount)}</p>
+                        <button onclick="window.deleteTxn('${t.id}')" class="text-white/20 hover:text-[#FF2E93] transition-all p-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+                    </div>
+                `;
+                list.appendChild(li);
+            });
+        }
+    </script>
+</body>
+</html>
